@@ -38,7 +38,7 @@ def parse_docstring(docstring):
     return '\n'.join(description), params
 
 
-def autospec(parser, func):
+def autospec(parser, func, argument_overrides=None):
     docstring = inspect.getdoc(func) or inspect.getcomments(func)
     parser.description, params_docs = parse_docstring(docstring)
 
@@ -77,7 +77,7 @@ def autospec(parser, func):
 
 class EndpointParser(argparse.ArgumentParser):
     subparsers = None
-    internal_keys = {'func', 'endpoint'}
+    internal_keys = {'__func__', '__endpoint__'}
 
     def clear_internal_keys(self, args):
         """
@@ -100,10 +100,16 @@ class EndpointParser(argparse.ArgumentParser):
 
     # noinspection PyProtectedMember
     def get_endpoint_parser(self, path):
+        """
+        :param str|list|tuple path:
+        :rtype: argparse.ArgumentParser
+        """
         if not isinstance(path, (list, tuple)):
             path = path.split('.')
-            if len(path) == 1:
+            if len(path) == 1 and path[0]:
                 path = path[0].split(' ')
+            elif len(path) == 1 and not path[0]:
+                path = []
 
         if not path:
             return self
@@ -118,18 +124,19 @@ class EndpointParser(argparse.ArgumentParser):
             else:
                 parser = parser.subparsers.add_parser(key)
 
+        parser.path = path
+
         return parser
 
-    def add_endpoint(self, path, func, autospec=True):
+    def add_endpoint(self, path, func=None, autospec=True, argument_overrides=None):
         parser = self.get_endpoint_parser(path)
 
         if func:
-            parser.set_defaults(func=func)
+            if autospec:
+                globals()['autospec'](parser, func, argument_overrides=argument_overrides)
+            parser.set_defaults(__func__=func)
 
-        parser.set_defaults(endpoint=path)
-
-        if autospec:
-            globals()['autospec'](parser, func)
+        parser.set_defaults(__endpoint__=path)
 
         return parser
 
@@ -138,7 +145,10 @@ class EndpointParser(argparse.ArgumentParser):
         return self.call(args)
 
     def call(self, args):
-        func = args.func
+        if not hasattr(args, '__func__'):
+            self.error('Invalid endpoint')
+
+        func = args.__func__
         args = self.clear_internal_keys(args)
 
         return func(**args)
