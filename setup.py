@@ -7,7 +7,7 @@ with open('README.md') as readme:
 try:
     import pypandoc
 
-    long_description = pypandoc.convert(long_description, 'rst')
+    long_description = pypandoc.convert(long_description, 'rst', 'markdown')
 except(IOError, ImportError):
     long_description = long_description
 
