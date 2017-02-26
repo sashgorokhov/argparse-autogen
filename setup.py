@@ -4,12 +4,14 @@ with open('README.md') as readme:
     with open('HISTORY.md') as history:
         long_description = readme.read() + '\n\n' + history.read()
 
+VERSION = '1.0'
+
 setup(
     name='argparse-autogen',
     py_modules=['argparse_autogen'],
-    version='0.1',
+    version=VERSION,
     url='https://github.com/sashgorokhov/argparse-autogen',
-    download_url='https://github.com/sashgorokhov/argparse-autogen/archive/master.zip',
+    download_url='https://github.com/sashgorokhov/argparse-autogen/archive/v%s.zip' % VERSION,
     keywords=['python', 'argparse', 'generate'],
     classifiers=[],
     long_description=long_description,
