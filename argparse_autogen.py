@@ -31,7 +31,7 @@ def parse_docstring(docstring):
             params[-1]['description'] += '\n' + line.strip()
             continue
 
-        match = re.match('^:param\s+(?P<type>.+?)?(?(type)\s+|)(?P<name>.+?):(?P<description>.+)?', line)
+        match = re.match('^:param\s+(?P<type>.+?)?(?(type)\s+|)(?P<name>.+?):\s*(?P<description>.+)?', line)
         if match:
             params.append(match.groupdict())
 
@@ -39,13 +39,15 @@ def parse_docstring(docstring):
 
 
 def autospec(parser, func, argument_overrides=None):
-    docstring = inspect.getdoc(func) or inspect.getcomments(func)
+    docstring = inspect.getdoc(func) or ""
     parser.description, params_docs = parse_docstring(docstring)
+    argument_overrides = argument_overrides or dict()
 
     signature = inspect.signature(func)
     for param_name, param in signature.parameters.items():
         if param_name == 'self' or param_name == 'cls':
-            continue
+            # https://bitbucket.org/ned/coveragepy/issues/198/continue-marked-as-not-covered
+            continue  # pragma: no cover
 
         kwargs = dict(
             action='store',
@@ -60,7 +62,8 @@ def autospec(parser, func, argument_overrides=None):
             continue
         elif param.kind == inspect.Parameter.VAR_KEYWORD:
             kwargs['nargs'] = '*'
-            kwargs['help'] = 'Optional keyword arguments. Specify them as key=value'
+            if kwargs['help'] == param_name:
+                kwargs['help'] = 'Optional keyword arguments. Specify them as key=value'
 
         if param.default is not inspect._empty:
             param_name = '--' + param_name
@@ -71,6 +74,9 @@ def autospec(parser, func, argument_overrides=None):
                 kwargs['action'] = 'store_false'
             else:
                 kwargs['action'] = 'store_true'
+
+        if param_name in argument_overrides:
+            kwargs.update(argument_overrides[param_name])
 
         parser.add_argument(param_name, **kwargs)
 
