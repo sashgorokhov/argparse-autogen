@@ -4,6 +4,13 @@ import re
 
 
 def parse_docstring(docstring):
+    """
+    Parse docstring and return tuple of description string and list of params dicts.
+    `:param` are supported only.
+    For `:param str foo: help` this will generate dict `{'type': 'str', 'name': 'foo', 'description': 'help'}`
+
+    :rtype: tuple[str, list[dict]]
+    """
     docstring = docstring or ''
     lines = docstring.split('\n')
     description = []
@@ -39,6 +46,13 @@ def parse_docstring(docstring):
 
 
 def autospec(parser, func, argument_overrides=None):
+    """
+    Generate parser arguments from `func` signature.
+
+    :param argparse.ArgumentParser parser: Target parser
+    :param func: Function to get signature from
+    :param None|dict[str, dict] argument_overrides: passed to add_argument for param
+    """
     docstring = inspect.getdoc(func) or ""
     parser.description, params_docs = parse_docstring(docstring)
     argument_overrides = argument_overrides or dict()
@@ -87,6 +101,8 @@ class EndpointParser(argparse.ArgumentParser):
 
     def clear_internal_keys(self, args):
         """
+        Deletes all keys specified in `internal_keys` field from args (Namespace or dict)
+
         :param dict|argparse.Namespace args:
         :rtype: dict
         """
@@ -101,12 +117,19 @@ class EndpointParser(argparse.ArgumentParser):
         return args
 
     def add_subparsers(self, **kwargs):
+        """
+        Create subparsers action for current parser and store it at `subparsers` field
+
+        :rtype: argparse._SubParsersAction
+        """
         self.subparsers = super(EndpointParser, self).add_subparsers(**kwargs)
         return self.subparsers
 
     # noinspection PyProtectedMember
     def get_endpoint_parser(self, path):
         """
+        Return a parser for `path`.
+
         :param str|list|tuple path:
         :rtype: argparse.ArgumentParser
         """
@@ -147,6 +170,9 @@ class EndpointParser(argparse.ArgumentParser):
         return parser
 
     def parse_and_call(self, *args, **kwargs):
+        """
+        Shortcut function to parse args and call.
+        """
         args = self.parse_args(*args, **kwargs)
         return self.call(args)
 
