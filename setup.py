@@ -4,7 +4,14 @@ with open('README.md') as readme:
     with open('HISTORY.md') as history:
         long_description = readme.read() + '\n\n' + history.read()
 
-VERSION = '1.0'
+try:
+    import pypandoc
+
+    long_description = pypandoc.convert(long_description, 'rst')
+except(IOError, ImportError):
+    long_description = long_description
+
+VERSION = '1.0.1'
 
 setup(
     name='argparse-autogen',
