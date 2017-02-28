@@ -1,5 +1,9 @@
 ## History
 
+### 1.1 (2017-02-28)
+
+- Filter args from func signature in call method #1
+
 ### 1.0 (2017-02-26)
 
 - First release

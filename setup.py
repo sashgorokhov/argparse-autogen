@@ -11,7 +11,7 @@ try:
 except(IOError, ImportError):
     long_description = long_description
 
-VERSION = '1.0.1'
+VERSION = '1.1'
 
 setup(
     name='argparse-autogen',

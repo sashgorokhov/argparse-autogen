@@ -106,14 +106,17 @@ class EndpointParser(argparse.ArgumentParser):
         :param dict|argparse.Namespace args:
         :rtype: dict
         """
-        if not isinstance(args, dict):
+        if isinstance(args, argparse.Namespace):
             args = vars(args)
         for key in self.internal_keys:
             args.pop(key, None)
-        kwargs = args.pop('kwargs', [])
-        for item in kwargs:
+        kwargs_list = args.pop('kwargs', [])
+        kwargs = dict()
+        for item in kwargs_list:
             key, value = item.split('=')
-            args[key] = value
+            kwargs[key] = value
+        if kwargs:
+            args['kwargs'] = kwargs
         return args
 
     def add_subparsers(self, **kwargs):
@@ -182,5 +185,20 @@ class EndpointParser(argparse.ArgumentParser):
 
         func = args.__func__
         args = self.clear_internal_keys(args)
+        kwargs = self.get_func_arguments(func, args)
+        return func(**kwargs)
 
-        return func(**args)
+    def get_func_arguments(self, func, args):
+        if isinstance(args, argparse.Namespace):
+            args = vars(args)
+
+        kwargs = dict()
+        signature = inspect.signature(func)
+        for param_name in signature.parameters.keys():
+            if param_name in args and param_name != 'kwargs':
+                kwargs[param_name] = args[param_name]
+
+        if 'kwargs' in args:
+            kwargs.update(args['kwargs'])
+
+        return kwargs
