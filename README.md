@@ -6,6 +6,8 @@ Parser with automatic creation of parsers and subparsers for paths.
 
 ## Installation
 
+Supported versions of python: **`3.3+`** (because of inspect.Signature, which was introduced in python 3.3)
+
 ```shell
 pip install argparse-autogen
 ```
