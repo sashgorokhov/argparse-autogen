@@ -32,9 +32,9 @@ class TestClearInternalKeys(BaseTestCase):
         args = {'kwargs': ['foo=bar']}
         cleaned_args = self.parser.clear_internal_keys(args)
 
-        assert 'kwargs' not in cleaned_args
-        assert 'foo' in cleaned_args
-        assert cleaned_args['foo'] == 'bar'
+        assert 'kwargs' in cleaned_args
+        assert 'foo' in cleaned_args['kwargs']
+        assert cleaned_args['kwargs']['foo'] == 'bar'
 
 
 class TestGetEndpointParser(BaseTestCase):
@@ -108,3 +108,31 @@ class TestEndpointParser(BaseTestCase):
 
         with self.assertRaises(SystemExit):
             self.parser.parse_and_call(['list'])
+
+
+class TestGetFuncArguments(BaseTestCase):
+    def test_get_func_arguments(self):
+        def foo(foo, bar):
+            pass
+
+        args = {'foo': 1, 'bar': 2, 'baz': 3}
+        kwargs = self.parser.get_func_arguments(foo, args)
+
+        assert 'foo' in kwargs
+        assert 'bar' in kwargs
+        assert 'baz' not in kwargs
+
+    def test_with_kwargs(self):
+        def foo(foo, bar, **kwargs):
+            pass
+
+        args = argparse.Namespace(foo=1, bar=2, baz=3, kwargs=dict(hello='world'))
+
+        kwargs = self.parser.get_func_arguments(foo, args)
+
+        assert 'foo' in kwargs
+        assert 'bar' in kwargs
+        assert 'baz' not in kwargs
+        assert 'hello' in kwargs
+        assert kwargs['hello'] == 'world'
+        assert 'kwargs' not in kwargs
