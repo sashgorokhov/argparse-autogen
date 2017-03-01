@@ -95,6 +95,18 @@ def autospec(parser, func, argument_overrides=None):
         parser.add_argument(param_name, **kwargs)
 
 
+def clear_qualname(qualname):
+    p = list()
+    for item in qualname.split('.'):
+        item = item.lower()
+        while item.startswith('_'):
+            item = item[1:]
+        while item.endswith('_'):
+            item = item[:-1]
+        p.append(item)
+    return p
+
+
 class EndpointParser(argparse.ArgumentParser):
     subparsers = None
     internal_keys = {'__func__', '__endpoint__'}
@@ -161,6 +173,11 @@ class EndpointParser(argparse.ArgumentParser):
         return parser
 
     def add_endpoint(self, path, func=None, autospec=True, argument_overrides=None):
+        if func is None and callable(path):
+            func = path
+            qualname = clear_qualname(func.__qualname__)
+            path = qualname[1 if len(qualname) > 1 else 0:]
+
         parser = self.get_endpoint_parser(path)
 
         if func:

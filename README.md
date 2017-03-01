@@ -76,7 +76,9 @@ parser = argparse_autogen.EndpointParser()
 
 parser.add_endpoint('users.get', cli.users.get, argument_overrides={'user_id': {'help': 'Users id'}})
 parser.add_endpoint('users.list', cli.users.list)
-parser.add_endpoint('users.update', cli.users.update)
+parser.add_endpoint(cli.users.update) 
+# this will use __qualname__ of update func as path, lowercased and trailing and ending underscores removed.
+# The first item of qualname is skipped, so it would be `users.update`, not `mycli.users.update`
 
 groups_get_parser = parser.add_endpoint('groups get', cli.groups.get, autospec=False)
 groups_get_parser.add_argument('group_id', help='Group id')

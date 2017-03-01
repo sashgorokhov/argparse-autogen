@@ -77,6 +77,16 @@ class TestAddEndpoint(BaseTestCase):
         assert '__func__' in parser._defaults
         assert '__endpoint__' in parser._defaults
 
+    def test_add_path_func(self):
+        class Foo:
+            def __init__(self): self.bar = self._Bar()
+            class _Bar:
+                def baz(self): pass
+
+        foo = Foo()
+        parser = self.parser.add_endpoint(foo.bar.baz)
+        assert parser._defaults['__endpoint__'][-3:] == ['foo', 'bar', 'baz']
+
 
 class TestEndpointParser(BaseTestCase):
     def test_endpoint_parsing(self):
@@ -136,3 +146,13 @@ class TestGetFuncArguments(BaseTestCase):
         assert 'hello' in kwargs
         assert kwargs['hello'] == 'world'
         assert 'kwargs' not in kwargs
+
+
+def test_clear_qualname():
+    qualname = 'Foo___._Bar.baz'
+    path = argparse_autogen.clear_qualname(qualname)
+    assert path == ['foo', 'bar', 'baz']
+
+    qualname = 'Foo._Bar_and_bar_.baz'
+    path = argparse_autogen.clear_qualname(qualname)
+    assert path == ['foo', 'bar_and_bar', 'baz']
