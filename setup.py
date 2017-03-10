@@ -11,7 +11,7 @@ try:
 except(IOError, ImportError):
     long_description = long_description
 
-VERSION = '1.2'
+VERSION = '1.2.1'
 
 setup(
     name='argparse-autogen',
@@ -20,7 +20,18 @@ setup(
     url='https://github.com/sashgorokhov/argparse-autogen',
     download_url='https://github.com/sashgorokhov/argparse-autogen/archive/v%s.zip' % VERSION,
     keywords=['python', 'argparse', 'generate'],
-    classifiers=[],
+    classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'Environment :: Console',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+        'Topic :: Terminals',
+    ],
     long_description=long_description,
     license='MIT License',
     author='sashgorokhov',
