@@ -152,18 +152,24 @@ def get_func_arguments(func, argparse_args):
     signature = inspect.signature(func)
     got_positional = False
     for param_name, param in signature.parameters.items():
+        if param_name not in argparse_args:
+            continue
+        if param.kind == inspect.Parameter.VAR_KEYWORD:
+            kwargs_list = argparse_args[param_name]
+            kw = dict()
+            for item in kwargs_list:
+                key, value = item.split('=')
+                kw[key] = value
+            kwargs.update(kw)
+            continue
+        elif got_positional:
+            kwargs[param_name] = argparse_args[param_name]
+            continue
+        got_positional = param.kind == inspect.Parameter.VAR_POSITIONAL
         if got_positional:
-            if param_name in argparse_args and param_name != 'kwargs':
-                kwargs[param_name] = argparse_args[param_name]
+            args.extend(argparse_args[param_name])
         else:
-            got_positional = param.kind == inspect.Parameter.VAR_POSITIONAL and param_name in argparse_args
-            if got_positional:
-                args.extend(argparse_args[param_name])
-            else:
-                args.append(argparse_args[param_name])
-
-    if 'kwargs' in argparse_args:
-        kwargs.update(argparse_args['kwargs'])
+            args.append(argparse_args[param_name])
 
     return args, kwargs
 
@@ -207,13 +213,6 @@ class EndpointParser(argparse.ArgumentParser):
             args = vars(args)
         for key in self.internal_keys:
             args.pop(key, None)
-        kwargs_list = args.pop('kwargs', [])
-        kwargs = dict()
-        for item in kwargs_list:
-            key, value = item.split('=')
-            kwargs[key] = value
-        if kwargs:
-            args['kwargs'] = kwargs
         return args
 
     def add_subparsers(self, **kwargs):
