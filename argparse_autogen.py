@@ -45,6 +45,46 @@ def parse_docstring(docstring):
     return '\n'.join(description), params
 
 
+def _get_cls_paths(cls, path=None):
+    """
+    :param type|object cls:
+    :param list|tuple|None path: Root path
+    :rtype: dict
+    """
+    paths = dict()
+    path = path or tuple()
+    path = tuple(path)
+
+    for member_name, member in inspect.getmembers(cls):
+        if member_name.startswith('_'):
+            continue
+        new_path = path + (_clear_name(member_name),)
+        if inspect.isclass(member):
+            # paths.update(_get_cls_paths(member, path=new_path))
+            continue
+        elif inspect.isroutine(member):
+            paths[new_path] = member
+
+    return paths
+
+
+def get_paths(cls, path=None):
+    """
+    Get paths for object or list of objects.
+
+    :param list[type]|type|object cls:
+    :param list|tuple|None path: Root path
+    :rtype: dict
+    """
+    if not isinstance(cls, (list, tuple)):
+        cls = [cls]
+
+    paths = dict()
+    for c in reversed(cls):
+        paths.update(_get_cls_paths(c, path=path))
+    return paths
+
+
 def autospec(parser, func, argument_overrides=None):
     """
     Generate parser arguments from `func` signature.
@@ -95,16 +135,44 @@ def autospec(parser, func, argument_overrides=None):
         parser.add_argument(param_name, **kwargs)
 
 
+def get_func_arguments(func, args):
+    if isinstance(args, argparse.Namespace):
+        args = vars(args)
+
+    kwargs = dict()
+    signature = inspect.signature(func)
+    for param_name in signature.parameters.keys():
+        if param_name in args and param_name != 'kwargs':
+            kwargs[param_name] = args[param_name]
+
+    if 'kwargs' in args:
+        kwargs.update(args['kwargs'])
+
+    return kwargs
+
+
+def _clear_name(name):
+    name = name.lower()
+    while name.startswith('_'):
+        name = name[1:]
+    while name.endswith('_'):
+        name = name[:-1]
+    return name
+
+
 def clear_qualname(qualname):
-    p = list()
-    for item in qualname.split('.'):
-        item = item.lower()
-        while item.startswith('_'):
-            item = item[1:]
-        while item.endswith('_'):
-            item = item[:-1]
-        p.append(item)
-    return p
+    return list(map(_clear_name, qualname.split('.')))
+
+
+def parse_path(path):
+    path = path or []
+    if not isinstance(path, (list, tuple)):
+        path = path.split('.')
+        if len(path) == 1 and path[0]:
+            path = path[0].split(' ')
+        elif len(path) == 1 and not path[0]:
+            path = []
+    return path
 
 
 class EndpointParser(argparse.ArgumentParser):
@@ -148,12 +216,7 @@ class EndpointParser(argparse.ArgumentParser):
         :param str|list|tuple path:
         :rtype: argparse.ArgumentParser
         """
-        if not isinstance(path, (list, tuple)):
-            path = path.split('.')
-            if len(path) == 1 and path[0]:
-                path = path[0].split(' ')
-            elif len(path) == 1 and not path[0]:
-                path = []
+        path = parse_path(path)
 
         if not path:
             return self
@@ -189,6 +252,20 @@ class EndpointParser(argparse.ArgumentParser):
 
         return parser
 
+    def generate_endpoints(self, obj, root_path=None, **kwargs):
+        """
+        Generate endpoints from object or list of objects.
+
+        :param list[object]|object obj:
+        :param list|tuple|str root_path:
+        :param dict kwargs: passed to `add_endpoint` for specified path
+        """
+        root_path = parse_path(root_path)
+        paths = get_paths(obj, path=root_path)
+        for path, func in paths.items():
+            kw = kwargs.get(path, {}) or kwargs.get('.'.join(path), {})
+            self.add_endpoint(path, func=func, **kw)
+
     def parse_and_call(self, *args, **kwargs):
         """
         Shortcut function to parse args and call.
@@ -202,20 +279,5 @@ class EndpointParser(argparse.ArgumentParser):
 
         func = args.__func__
         args = self.clear_internal_keys(args)
-        kwargs = self.get_func_arguments(func, args)
+        kwargs = get_func_arguments(func, args)
         return func(**kwargs)
-
-    def get_func_arguments(self, func, args):
-        if isinstance(args, argparse.Namespace):
-            args = vars(args)
-
-        kwargs = dict()
-        signature = inspect.signature(func)
-        for param_name in signature.parameters.keys():
-            if param_name in args and param_name != 'kwargs':
-                kwargs[param_name] = args[param_name]
-
-        if 'kwargs' in args:
-            kwargs.update(args['kwargs'])
-
-        return kwargs
