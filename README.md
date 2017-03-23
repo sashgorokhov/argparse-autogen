@@ -80,6 +80,10 @@ parser.add_endpoint(cli.users.update)
 # this will use __qualname__ of update func as path, lowercased and trailing and ending underscores removed.
 # The first item of qualname is skipped, so it would be `users.update`, not `mycli.users.update`
 
+# Alternatively, you can use autogeneration of paths and endpoints:
+# parser.generate_endpoints(cli.users, root_path='users')
+# Will create endpoints from class methods.
+
 groups_get_parser = parser.add_endpoint('groups get', cli.groups.get, autospec=False)
 groups_get_parser.add_argument('group_id', help='Group id')
 
