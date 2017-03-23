@@ -126,7 +126,7 @@ class TestGetFuncArguments(BaseTestCase):
             pass
 
         args = {'foo': 1, 'bar': 2, 'baz': 3}
-        kwargs = self.parser.get_func_arguments(foo, args)
+        kwargs = argparse_autogen.get_func_arguments(foo, args)
 
         assert 'foo' in kwargs
         assert 'bar' in kwargs
@@ -138,7 +138,7 @@ class TestGetFuncArguments(BaseTestCase):
 
         args = argparse.Namespace(foo=1, bar=2, baz=3, kwargs=dict(hello='world'))
 
-        kwargs = self.parser.get_func_arguments(foo, args)
+        kwargs = argparse_autogen.get_func_arguments(foo, args)
 
         assert 'foo' in kwargs
         assert 'bar' in kwargs
