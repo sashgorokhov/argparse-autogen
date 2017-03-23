@@ -59,14 +59,6 @@ def test_param_docstring(parser):
     assert parser.add_argument.call_args_list[0][1]['help'] == 'this is help'
 
 
-def test_positional_params(parser):
-    def foo(*args):
-        pass
-
-    argparse_autogen.autospec(parser, foo)
-    parser.add_argument.assert_not_called()
-
-
 def test_keyword_param(parser):
     def foo(**kwargs):
         pass

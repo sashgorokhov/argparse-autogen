@@ -49,7 +49,7 @@ optional arguments:
   -h, --help  show this help message and exit
   --force     Force doing cool stuff
 ```
-This magic is done by `argparse_autogen.autospec` function. It introspects function signature, and adds corresponding argparse arguments to parser. `*args` aguments in function are not supported - this parameter will be skipped. `**kwargs` are supported and can be passed as `[key=value [key=value ...]]`. You can override argument settings by passing `argument_overrides` option to `add_endpoint`. This must be a `dict[str, dict]` where keys are parameter name, and values are parameters to override defaults passed to `parser.add_argument`
+This magic is done by `argparse_autogen.autospec` function. It introspects function signature, and adds corresponding argparse arguments to parser. `**kwargs` are supported and can be passed as `[key=value [key=value ...]]`. You can override argument settings by passing `argument_overrides` option to `add_endpoint`. This must be a `dict[str, dict]` where keys are parameter name, and values are parameters to override defaults passed to `parser.add_argument`
 
 ## More endpoint examples
 
@@ -65,6 +65,7 @@ class MyCli():
   class Users():
     def get(self, user_id): pass
     def list(self, **filter): pass
+    def set_roles(self, user_id, *role): pass
     def update(self, user_id, **fields): pass
    
   class Groups():
@@ -81,7 +82,7 @@ parser.add_endpoint(cli.users.update)
 # The first item of qualname is skipped, so it would be `users.update`, not `mycli.users.update`
 
 # Alternatively, you can use autogeneration of paths and endpoints:
-# parser.generate_endpoints(cli.users, root_path='users')
+# parser.generate_endpoints(cli.users, root_path='users', endpoint_kwargs={'users.get': {'argument_overrides': {'user_id': {'help': 'Users id'}}}})
 # Will create endpoints from class methods.
 
 groups_get_parser = parser.add_endpoint('groups get', cli.groups.get, autospec=False)

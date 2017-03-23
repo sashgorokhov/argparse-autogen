@@ -90,7 +90,8 @@ class TestAddEndpoint(BaseTestCase):
 
 class TestEndpointParser(BaseTestCase):
     def test_endpoint_parsing(self):
-        func = mock.Mock()
+        m = mock.Mock()
+        func = lambda: m()
         self.parser.add_endpoint('list.dir', func=func)
 
         args = self.parser.parse_args(['list', 'dir'])
@@ -98,20 +99,23 @@ class TestEndpointParser(BaseTestCase):
 
         self.parser.call(args)
 
-        func.assert_any_call()
+        m.assert_any_call()
 
     def test_several_endpoints(self):
-        func1 = mock.Mock()
-        func2 = mock.Mock()
+        m1 = mock.Mock()
+        m2 = mock.Mock()
+
+        func1 = lambda: m1()
+        func2 = lambda: m2()
 
         self.parser.add_endpoint('list.dir', func=func1)
         self.parser.add_endpoint('list.files', func=func2)
 
         self.parser.parse_and_call(['list', 'dir'])
-        func1.assert_any_call()
+        m1.assert_any_call()
 
         self.parser.parse_and_call(['list', 'files'])
-        func2.assert_any_call()
+        m2.assert_any_call()
 
     def test_invalid_endpoint(self):
         self.parser.add_endpoint('list.dir')
@@ -122,27 +126,23 @@ class TestEndpointParser(BaseTestCase):
 
 class TestGetFuncArguments(BaseTestCase):
     def test_get_func_arguments(self):
-        def foo(foo, bar):
-            pass
+        def foo(foo, bar): pass
 
-        args = {'foo': 1, 'bar': 2, 'baz': 3}
-        kwargs = argparse_autogen.get_func_arguments(foo, args)
+        passed_args = {'foo': 1, 'bar': 2, 'baz': 3}
+        args, kwargs = argparse_autogen.get_func_arguments(foo, passed_args)
 
-        assert 'foo' in kwargs
-        assert 'bar' in kwargs
+        assert passed_args['foo'] == args[0]
+        assert passed_args['bar'] == args[1]
         assert 'baz' not in kwargs
 
     def test_with_kwargs(self):
         def foo(foo, bar, **kwargs):
             pass
 
-        args = argparse.Namespace(foo=1, bar=2, baz=3, kwargs=dict(hello='world'))
+        passed_args = argparse.Namespace(foo=1, bar=2, baz=3, kwargs=dict(hello='world'))
 
-        kwargs = argparse_autogen.get_func_arguments(foo, args)
+        args, kwargs = argparse_autogen.get_func_arguments(foo, passed_args)
 
-        assert 'foo' in kwargs
-        assert 'bar' in kwargs
-        assert 'baz' not in kwargs
         assert 'hello' in kwargs
         assert kwargs['hello'] == 'world'
         assert 'kwargs' not in kwargs

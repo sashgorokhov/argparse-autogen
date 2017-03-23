@@ -135,20 +135,37 @@ def autospec(parser, func, argument_overrides=None):
         parser.add_argument(param_name, **kwargs)
 
 
-def get_func_arguments(func, args):
-    if isinstance(args, argparse.Namespace):
-        args = vars(args)
+def get_func_arguments(func, argparse_args):
+    """
+    Return args and kwargs for func.
 
+    :param callable func:
+    :param argparse.Namespace|dict argparse_args: argparse Namespace or dict
+    :return: args and kwargs to be passed into func
+    :rtype: tuple[list, dict]
+    """
+    if isinstance(argparse_args, argparse.Namespace):
+        argparse_args = vars(argparse_args)
+
+    args = list()
     kwargs = dict()
     signature = inspect.signature(func)
-    for param_name in signature.parameters.keys():
-        if param_name in args and param_name != 'kwargs':
-            kwargs[param_name] = args[param_name]
+    got_positional = False
+    for param_name, param in signature.parameters.items():
+        if got_positional:
+            if param_name in argparse_args and param_name != 'kwargs':
+                kwargs[param_name] = argparse_args[param_name]
+        else:
+            got_positional = param.kind == inspect.Parameter.VAR_POSITIONAL and param_name in argparse_args
+            if got_positional:
+                args.extend(argparse_args[param_name])
+            else:
+                args.append(argparse_args[param_name])
 
-    if 'kwargs' in args:
-        kwargs.update(args['kwargs'])
+    if 'kwargs' in argparse_args:
+        kwargs.update(argparse_args['kwargs'])
 
-    return kwargs
+    return args, kwargs
 
 
 def _clear_name(name):
@@ -280,5 +297,5 @@ class EndpointParser(argparse.ArgumentParser):
 
         func = args.__func__
         args = self.clear_internal_keys(args)
-        kwargs = get_func_arguments(func, args)
-        return func(**kwargs)
+        args, kwargs = get_func_arguments(func, args)
+        return func(*args, **kwargs)
