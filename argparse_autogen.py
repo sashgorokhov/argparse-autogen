@@ -113,7 +113,7 @@ def autospec(parser, func, argument_overrides=None):
                 kwargs['help'] = param_doc['description']
 
         if param.kind == inspect.Parameter.VAR_POSITIONAL:
-            continue
+            kwargs['nargs'] = '+'
         elif param.kind == inspect.Parameter.VAR_KEYWORD:
             kwargs['nargs'] = '*'
             if kwargs['help'] == param_name:
@@ -252,18 +252,19 @@ class EndpointParser(argparse.ArgumentParser):
 
         return parser
 
-    def generate_endpoints(self, obj, root_path=None, **kwargs):
+    def generate_endpoints(self, obj, root_path=None, endpoint_kwargs=None):
         """
         Generate endpoints from object or list of objects.
 
         :param list[object]|object obj:
         :param list|tuple|str root_path:
-        :param dict kwargs: passed to `add_endpoint` for specified path
+        :param dict endpoint_kwargs: passed to `add_endpoint` for specified path
         """
+        endpoint_kwargs = endpoint_kwargs or {}
         root_path = parse_path(root_path)
         paths = get_paths(obj, path=root_path)
         for path, func in paths.items():
-            kw = kwargs.get(path, {}) or kwargs.get('.'.join(path), {})
+            kw = endpoint_kwargs.get(path, {}) or endpoint_kwargs.get('.'.join(path), {})
             self.add_endpoint(path, func=func, **kw)
 
     def parse_and_call(self, *args, **kwargs):
