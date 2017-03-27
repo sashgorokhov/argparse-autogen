@@ -225,7 +225,7 @@ class EndpointParser(argparse.ArgumentParser):
         return self.subparsers
 
     # noinspection PyProtectedMember
-    def get_endpoint_parser(self, path):
+    def get_endpoint_parser(self, path, **kwargs):
         """
         Return a parser for `path`.
 
@@ -241,23 +241,24 @@ class EndpointParser(argparse.ArgumentParser):
 
         for key in path:
             if parser.subparsers is None:
-                parser.add_subparsers()
+                parser.add_subparsers(title='Available commands')
             if key in parser.subparsers._name_parser_map:
                 parser = parser.subparsers._name_parser_map[key]
             else:
-                parser = parser.subparsers.add_parser(key)
+                parser = parser.subparsers.add_parser(key, **kwargs)
 
         parser.path = path
 
         return parser
 
-    def add_endpoint(self, path, func=None, autospec=True, argument_overrides=None):
+    def add_endpoint(self, path, func=None, autospec=True, argument_overrides=None, **kwargs):
         if func is None and callable(path):
             func = path
             qualname = clear_qualname(func.__qualname__)
             path = qualname[1 if len(qualname) > 1 else 0:]
 
-        parser = self.get_endpoint_parser(path)
+        kwargs.setdefault('help', parse_docstring(inspect.getdoc(func) or "")[0])
+        parser = self.get_endpoint_parser(path, **kwargs)
 
         if func:
             if autospec:
@@ -268,19 +269,25 @@ class EndpointParser(argparse.ArgumentParser):
 
         return parser
 
-    def generate_endpoints(self, obj, root_path=None, endpoint_kwargs=None):
+    def generate_endpoints(self, obj, root_path=None, endpoint_kwargs=None, **kwargs):
         """
         Generate endpoints from object or list of objects.
 
         :param list[object]|object obj:
         :param list|tuple|str root_path:
         :param dict endpoint_kwargs: passed to `add_endpoint` for specified path
+        :param dict kwargs: general kwargs passed to every add_endpoint call.
         """
         endpoint_kwargs = endpoint_kwargs or {}
         root_path = parse_path(root_path)
         paths = get_paths(obj, path=root_path)
+        root_kwargs = dict()
+        if obj.__doc__:
+            root_kwargs['help'] = obj.__doc__
+        root_parser = self.get_endpoint_parser(root_path, **root_kwargs)
         for path, func in paths.items():
-            kw = endpoint_kwargs.get(path, {}) or endpoint_kwargs.get('.'.join(path), {})
+            kw = kwargs.copy()
+            kw.update(endpoint_kwargs.get(path, {}) or endpoint_kwargs.get('.'.join(path), {}))
             self.add_endpoint(path, func=func, **kw)
 
     def parse_and_call(self, *args, **kwargs):
